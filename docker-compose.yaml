@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  hello-world:
+    image: hello-world
+    deploy:
+      mode: replicated
+      replicas: 5
+  db:
+    container_name: postgres-db
+    image: postgres:17-alpine3.20
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: docker_demo
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  app:
+    container_name: dockerdemo-app
+    image: dockerdemo-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/docker_demo
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - "8080:8080"
+    build:
+      context: .
+      dockerfile: Dockerfile
